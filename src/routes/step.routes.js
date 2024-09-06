@@ -1,11 +1,11 @@
 import express from "express";
 
-import { getMessages, sendMessage } from "../controllers/message.controller.js";
+import { getSteps, sendSteps } from "../controllers/step.controller.js";
 import protectRoute from "../middleware/protectRoute.js";
 
 const router = express.Router();
 
-router.get("/:conversationId", protectRoute, getMessages);
-router.post("/:conversationId/send", protectRoute, sendMessage); // protectRoute에 의해 
+router.get("/", protectRoute, getSteps);
+router.post("/send", protectRoute, sendSteps);
 
 export default router;

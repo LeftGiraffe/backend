@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import events from "events";
 
 import authRoutes from "./src/routes/auth.routes.js";
-// import stepRoutes from "./src/routes/step.routes.js";
+import stepRoutes from "./src/routes/step.routes.js";
 
 import connectToMongoDB from "./src/db/connectToMongoDB.js";
 
@@ -27,7 +27,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
-// app.use("/api/steps", stepRoutes);
+app.use("/api/steps", stepRoutes);
 
 app.listen(PORT, () => {
   connectToMongoDB();
