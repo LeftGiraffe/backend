@@ -1,17 +1,15 @@
 import jwt from "jsonwebtoken";
 
 const generateTokenAndSetCookie = (userId, res) => {
-	const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
-		expiresIn: "15d",
-	});
+  const accessToken = jwt.sign({ userId }, process.env.JWT_SECRET, {
+    expiresIn: "15m",
+  });
 
-	// res.cookie("jwt", token, {
-	// 	maxAge: 15 * 24 * 60 * 60 * 1000, 
-	// 	httpOnly: true, 
-	// 	sameSite: "strict", 
-	// 	secure: process.env.NODE_ENV !== "development",
-	// }); not use in react Native
-	return token;
+  const refreshToken = jwt.sign({ userId }, process.env.REFRESH_TOKEN_SECRET, {
+    expiresIn: "30d",
+  });
+
+  return { accessToken, refreshToken };
 };
 
 export default generateTokenAndSetCookie;

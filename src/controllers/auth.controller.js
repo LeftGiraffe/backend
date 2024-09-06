@@ -9,85 +9,123 @@ export const signup = async (req, res) => {
     const { email, password, confirmPassword } = req.body;
 
     if (password !== confirmPassword) {
-      return res.status(400).json({error: "Passwords don't match"});
+      return res.status(400).json({ error: "Passwords don't match" });
     }
 
-    const user = await User.findOne({email});
-    
+    const user = await User.findOne({ email });
+
     if (user) {
-      return res.status(400).json({error: "User already exists"});
+      return res.status(400).json({ error: "User already exists" });
     }
-    
+
     const salt = await bcrypt.genSalt(10); // 해싱을 통해 비밀번호 해싱 추적을 어렵게
     const hashedPassword = await bcrypt.hash(password, salt);
 
-		const newUser = new User({
-			email,
-			password: hashedPassword,
-		});
+    const newUser = new User({
+      email,
+      password: hashedPassword,
+    });
 
     if (newUser) {
+      const { accessToken, refreshToken } = generateTokenAndSetCookie(
+        newUser._id,
+        res
+      );
+      await newUser.save();
 
-			const token = generateTokenAndSetCookie(newUser._id, res);
-			await newUser.save();
-
-			res.status(201).json({
-				token: token
-			});
-		} else {
-			res.status(400).json({ error: "Invalid user data" });
-		}
-
+      res.status(201).json({
+        accessToken,
+        refreshToken,
+      });
+    } else {
+      res.status(400).json({ error: "Invalid user data" });
+    }
   } catch (err) {
     res.status(500).json({ error: "Internal Server Error" });
     console.log("Error in signup controller", err.message);
   }
-}
+};
 
 export const login = async (req, res) => {
-	try {
-		const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-		const user = await User.findOne({ email });
-		const isPasswordCorrect = await bcrypt.compare(password, user?.password || "");
+    const user = await User.findOne({ email });
+    const isPasswordCorrect = await bcrypt.compare(
+      password,
+      user?.password || ""
+    );
 
-		if (!user || !isPasswordCorrect) {
-			return res.status(400).json({ error: "Invalid username or password" });
-		}
+    if (!user || !isPasswordCorrect) {
+      return res.status(400).json({ error: "Invalid username or password" });
+    }
 
-		const token = generateTokenAndSetCookie(user._id, res);
+    const { accessToken, refreshToken } = generateTokenAndSetCookie(
+      user._id,
+      res
+    );
 
-		res.status(200).json({
-			token: token
-		});
-	} catch (error) {
-		console.log("Error in login controller", error.message);
-		res.status(500).json({ error: "Internal Server Error" });
-	}
+    res.status(200).json({
+      accessToken,
+      refreshToken,
+    });
+  } catch (error) {
+    console.log("Error in login controller", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
 export const logout = (req, res) => {
-	try {
-		res.cookie("jwt", "", { maxAge: 0 });
-		res.status(200).json({ message: "Logged out successfully" });
-	} catch (error) {
-		console.log("Error in logout controller", error.message);
-		res.status(500).json({ error: "Internal Server Error" });
-	}
+  try {
+    res.cookie("jwt", "", { maxAge: 0 });
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.log("Error in logout controller", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
 export const deleteAccount = async (req, res) => {
-	const userId = req.user._id;
+  const userId = req.user._id;
 
-	try {
+  try {
     const deletedUser = await User.findByIdAndDelete(userId);
 
     if (!deletedUser) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json({ message: 'Account deleted successfully' });
+    res.status(200).json({ message: "Account deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: 'An error occurred while deleting the account', error });
+    res
+      .status(500)
+      .json({ message: "An error occurred while deleting the account", error });
+  }
+};
+
+export const refreshToken = async (req, res) => {
+  const { refreshToken } = req.body;
+
+  try {
+    const refreshDecoded = jwt.verify(
+      refreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
+    const newAccessToken = jwt.sign(
+      { userId: refreshDecoded.userId },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "15m",
+      }
+    );
+
+    res.status(200).json({ accessToken: newAccessToken });
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ error: "Refresh Token expired" });
+    }
+
+    res.status(403).json({ error: "Invalid Refresh Token" });
   }
 };
