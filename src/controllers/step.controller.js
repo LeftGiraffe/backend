@@ -25,7 +25,7 @@ export const getSteps = async (req, res) => {
       999
     );
 
-    const stepsData = await Step.findOne({
+    let stepsData = await Step.findOne({
       userId: userId,
       date: {
         $gte: startOfDay,
@@ -57,7 +57,8 @@ export const getSteps = async (req, res) => {
 export const sendSteps = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { stepsPerThirtyMinute } = req.body;
+    const { step: stepsPerDay } = req.body;
+    console.log("stepsPerDay: ", stepsPerDay);
 
     const now = new Date();
     const startOfDay = new Date(
@@ -79,15 +80,15 @@ export const sendSteps = async (req, res) => {
       999
     );
 
-    const stepsData = await Step.findOne({
+    let stepsData = await Step.findOne({
       userId: userId,
       date: {
         $gte: startOfDay,
         $lte: endOfDay,
       },
     });
-    
-    stepsData.step += stepsPerThirtyMinute;
+
+    stepsData.step += stepsPerDay;
 
     await stepsData.save();
 
