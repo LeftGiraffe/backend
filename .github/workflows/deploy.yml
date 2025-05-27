@@ -24,7 +24,7 @@ jobs:
       - name: Deploy via SSH
         run: |
           ssh ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} << 'EOF'
-            cd ~/your-app-folder
+            cd ~/dobuck-girin
             git pull origin main
             npm install
             pm2 restart all
